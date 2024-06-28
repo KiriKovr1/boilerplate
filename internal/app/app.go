@@ -4,6 +4,7 @@ import (
 	httpsrv "boilerplate/internal/app/http"
 	"boilerplate/internal/config"
 	"boilerplate/internal/lib/sl"
+	"context"
 	"log/slog"
 	"net/http"
 )
@@ -17,7 +18,7 @@ func MustLoad(log *slog.Logger, cfg *config.HttpServer) *App {
 	app, err := New(log, cfg)
 	if err != nil {
 		log.Error("Unable to create application", sl.Error(err))
-		panic("Unable to create application")
+		panic(err)
 	}
 
 	return app
@@ -37,10 +38,15 @@ func (a *App) Listen() {
 
 	if err := a.HttpServer.ListenAndServe(); err != nil {
 		log.Error("Unable to listen and serve", sl.Error(err))
+		panic(err)
 	}
-
 }
 
 func (a *App) Stop() {
+	log := a.log.With("op", "App.Stop")
 
+	if err := a.HttpServer.Shutdown(context.Background()); err != nil {
+		log.Error("Unable to Shutdown application", sl.Error(err))
+		a.HttpServer.Close()
+	}
 }
