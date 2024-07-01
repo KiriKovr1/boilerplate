@@ -1,33 +1,32 @@
 package main
 
 import (
+	"boilerplate/internal/app"
 	"boilerplate/internal/config"
+	"boilerplate/internal/lib/sl"
 	"log/slog"
-	"net/http"
-
-	"github.com/go-chi/chi/v5"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
 	cfg := config.MustLoad()
-	log := SetupLogger(cfg.Env)
-
-	_ = log
-
-	router := chi.NewRouter()
+	log := sl.SetupLogger(cfg.Env)
 
 	log.Info("Start Server", slog.String("adress", cfg.Http.Adress))
 
-	srv := &http.Server{
-		Addr:         cfg.Http.Adress,
-		Handler:      router,
-		ReadTimeout:  cfg.Http.Timeout,
-		WriteTimeout: cfg.Http.Timeout,
-		IdleTimeout:  cfg.Http.IdleTimeout,
-	}
+	app := app.MustLoad(log, &cfg.Http)
 
-	if err := srv.ListenAndServe(); err != nil {
-		log.Error("Failed to start Server")
-	}
+	go app.Start()
 
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	sig := <-stop
+
+	log.Info("Try to stop server", slog.String("signal", sig.String()))
+	app.Stop()
+
+	log.Info("Server is stopped")
 }

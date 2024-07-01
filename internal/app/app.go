@@ -4,14 +4,17 @@ import (
 	httpsrv "boilerplate/internal/app/http"
 	"boilerplate/internal/config"
 	"boilerplate/internal/lib/sl"
-	"context"
 	"log/slog"
-	"net/http"
 )
 
 type App struct {
-	HttpServer *http.Server
-	log        *slog.Logger
+	srv Srv
+	log *slog.Logger
+}
+
+type Srv interface {
+	Listen()
+	Stop()
 }
 
 func MustLoad(log *slog.Logger, cfg *config.HttpServer) *App {
@@ -28,25 +31,15 @@ func New(log *slog.Logger, cfg *config.HttpServer) (*App, error) {
 	srv := httpsrv.New(log, cfg)
 
 	return &App{
-		HttpServer: srv,
-		log:        log,
+		srv: srv,
+		log: log,
 	}, nil
 }
 
-func (a *App) Listen() {
-	log := a.log.With(slog.String("op", "App.Listen"))
-
-	if err := a.HttpServer.ListenAndServe(); err != nil {
-		log.Error("Unable to listen and serve", sl.Error(err))
-		panic(err)
-	}
+func (a *App) Start() {
+	a.srv.Listen()
 }
 
 func (a *App) Stop() {
-	log := a.log.With("op", "App.Stop")
-
-	if err := a.HttpServer.Shutdown(context.Background()); err != nil {
-		log.Error("Unable to Shutdown application", sl.Error(err))
-		a.HttpServer.Close()
-	}
+	a.srv.Stop()
 }

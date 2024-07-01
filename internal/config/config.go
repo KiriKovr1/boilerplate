@@ -10,8 +10,7 @@ import (
 )
 
 type HttpServer struct {
-	Port        uint16        `yaml:"port" env-default:"8080"`
-	Adress      string        `yaml:"adress" env-default:"127.0.0.1"`
+	Adress      string        `yaml:"addr" env-default:"127.0.0.1"`
 	Timeout     time.Duration `yaml:"timeout"`
 	IdleTimeout time.Duration `yaml:"idle_timeout"`
 }
